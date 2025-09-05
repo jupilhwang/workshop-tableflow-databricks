@@ -8,6 +8,9 @@ data "aws_caller_identity" "current" {}
 #  VPC and Subnets
 # -------------------------------
 
+data "aws_availability_zones" "available" {
+  state = "available"
+}
 # VPC
 resource "aws_vpc" "vpc" {
   cidr_block           = "10.0.0.0/16"
@@ -16,8 +19,14 @@ resource "aws_vpc" "vpc" {
 
 # Public Subnet
 resource "aws_subnet" "public_subnet" {
+
+  for_each = toset ([
+    for az in data.aws_availability_zones.available.names : az if substr(az, length(az) - 1, 1) == "a" || substr(az, length(az) - 1, 1) == "b" || substr(az, length(az) - 1, 1) == "c"
+  ])
+
   vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = "10.0.1.0/24"
+  availability_zone       = each.value
+  cidr_block              = cidrsubnet(aws_vpc.vpc.cidr_block, 8, index(sort(toset(data.aws_availability_zones.available.names)), each.value))
   map_public_ip_on_launch = true
 }
 
@@ -48,7 +57,8 @@ resource "aws_route_table" "public_route_table" {
 # -------------------------------
 
 resource "aws_route_table_association" "public_route_table_association" {
-  subnet_id      = aws_subnet.public_subnet.id
+  for_each = aws_subnet.public_subnet
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public_route_table.id
 }
 
@@ -84,13 +94,6 @@ resource "aws_security_group" "sg" {
 
 # NEW NETWORKING
 
-data "aws_availability_zones" "available" {
-  state = "available"
-  filter {
-    name   = "zone-type"
-    values = ["us-east-1d", "us-east-1e", "us-east-1f"] # This excludes Local Zones and Wavelength Zones
-  }
-}
 
 # # ------------------------------------------------------
 # # VPC

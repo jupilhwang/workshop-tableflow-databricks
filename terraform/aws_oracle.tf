@@ -83,9 +83,9 @@ data "aws_ami" "oracle_ami" {
 
 resource "aws_instance" "oracle_instance" {
   ami           = data.aws_ami.oracle_ami.id
-  instance_type = "t3.large"
+  instance_type = var.aws_instance_type
   key_name      = aws_key_pair.tf_key.key_name
-  subnet_id     = aws_subnet.public_subnet.id
+  subnet_id     = values(aws_subnet.public_subnet)[0].id
 
   vpc_security_group_ids = [aws_security_group.allow_ssh_oracle.id]
   root_block_device {
@@ -295,6 +295,44 @@ resource "aws_instance" "oracle_instance" {
   }
 }
 
+# null_resource를 사용하여 Oracle DB 리스너 상태 확인
+resource "null_resource" "db_listener_checker" {
+  # aws_instance가 생성된 후에 실행되도록 의존성 설정
+  depends_on = [aws_instance.oracle_instance]
+
+  # 원격 EC2 인스턴스에 접속하기 위한 정보
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = file("${path.module}/sshkey-${aws_key_pair.tf_key.key_name}.pem") # 로컬에 저장된 개인 키 파일 경로
+    host        = aws_instance.oracle_instance.public_dns
+  }
+
+  # remote-exec 프로비저너로 리스너 상태를 반복 확인하는 스크립트 실행
+  provisioner "remote-exec" {
+    inline = [
+      "sleep 240",
+      "echo 'Waiting for Oracle container to be healthy...'",
+      "for i in {1..20}; do",
+      "  if sudo docker ps | grep -q 'oracle-xe' ; then",
+      "    echo 'Container is running. Checking TNS listener readiness...'",
+      "    if sudo docker exec oracle-xe sqlplus -L system/${var.oracle_db_password}@//localhost:1521/XEPDB1 <<<'exit' > /dev/null 2>&1; then",
+      "      echo 'Success: Oracle TNS listener is ready and accepting connections!'",
+      "      exit 0",
+      "    else",
+      "      echo '... TNS listener is not yet accepting connections. Retrying ...'",
+      "    fi",
+      "  else",
+      "    echo '... Oracle container is not yet running. Waiting ...'",
+      "  fi",
+      "  sleep 60",
+      "done",
+      "echo 'Error: Oracle DB container did not become ready in time.'",
+      "exit 1",
+    ]
+  }
+}
+
 output "oracle_vm" {
   value = {
     private_ip          = aws_instance.oracle_instance.private_ip
@@ -310,11 +348,11 @@ output "oracle_xstream_connector" {
     database_hostname       = aws_instance.oracle_instance.public_dns
     database_port           = var.oracle_db_port
     database_username       = var.oracle_xstream_user_username
-    database_password       = nonsensitive(var.oracle_xstream_user_password)
+    database_password       = var.oracle_xstream_user_password
     database_name           = var.oracle_db_name
     database_service_name   = var.oracle_db_name
     pluggable_database_name = var.oracle_pdb_name
-    xstream_outbound_server = var.oracle_xtream_outbound_server_name
+    xstream_outbound_server = var.oracle_xstream_outbound_server_name
     table_inclusion_regex   = "SAMPLE[.](HOTEL|CUSTOMER)"
     topic_prefix            = "riverhotel"
     decimal_handling_mode   = "double"

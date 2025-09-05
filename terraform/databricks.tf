@@ -15,7 +15,7 @@ resource "databricks_storage_credential" "external_credential" {
 
   depends_on = [
     aws_iam_role.s3_access_role_databricks,
-    aws_iam_role_policy.s3_access_policy_databricks
+    aws_iam_role_policy_attachment.s3_policy_attachment_databricks
   ]
 }
 
@@ -33,8 +33,8 @@ resource "databricks_external_location" "s3_bucket" {
   force_destroy   = true
 
   depends_on = [
-    null_resource.wait_for_final_trust_policy_propagation,
-    aws_s3_bucket.tableflow_bucket
+    aws_s3_bucket.tableflow_bucket,
+    null_resource.wait_for_final_trust_policy_databricks_propagation
   ]
 }
 

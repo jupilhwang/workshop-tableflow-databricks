@@ -57,6 +57,12 @@ variable "aws_bedrock_anthropic_model_id" {
   default     = ""
 }
 
+variable "aws_instance_type" {
+  description = "AWS EC2 instance type for Oracle DB instance"
+  type        = string
+  default     = "t3.large"
+}
+
 # ---------------------
 # Confluent Cloud variables
 # ---------------------
@@ -93,7 +99,6 @@ variable "oracle_db_password" {
   description = "Oracle DB password"
   type        = string
   default     = "Welcome1"
-  sensitive   = true
 }
 
 variable "oracle_db_port" {
@@ -117,7 +122,6 @@ variable "oracle_xstream_user_username" {
 variable "oracle_xstream_user_password" {
   description = "Oracle DB Password"
   type        = string
-  sensitive   = true
   default     = "password"
 }
 
@@ -127,7 +131,7 @@ variable "oracle_db_table_include_list" {
   default     = "SAMPLE[.]"
 }
 
-variable "oracle_xtream_outbound_server_name" {
+variable "oracle_xstream_outbound_server_name" {
   description = "Oracle Xstream outbound server name"
   type        = string
   default     = "XOUT"

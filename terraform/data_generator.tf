@@ -41,3 +41,30 @@ resource "local_file" "shadow_traffic_license" {
   content  = data.http.shadow_traffic_license.response_body
   filename = "../data/shadow-traffic-license.env"
 }
+resource "null_resource" "run_data_generator_on_oracle_instance" {
+  depends_on = [ local_file.shadow_traffic_license, local_file.oracle_connection_config, local_file.kafka_connection_config, null_resource.db_listener_checker, confluent_kafka_cluster.standard ]
+ provisioner "local-exec" {
+    command = <<EOT
+      scp -i ${"sshkey-${aws_key_pair.tf_key.key_name}.pem"} -o "StrictHostKeyChecking=no" -r ../data ec2-user@${aws_instance.oracle_instance.public_dns}:~/
+    EOT
+  }
+
+  provisioner "local-exec" {
+    command = "sleep 60"
+  }
+  
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file("${path.module}/sshkey-${aws_key_pair.tf_key.key_name}.pem")
+      host        = aws_instance.oracle_instance.public_dns
+    }
+
+    inline = [
+      " echo 'docker run -d --env-file ./data/shadow-traffic-license.env -v $(pwd)/data/:/home/data shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json' > run_data_generator.sh ",
+      " chmod +x run_data_generator.sh ",
+      "docker run -d --env-file ./data/shadow-traffic-license.env -v $(pwd)/data/:/home/data shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json"
+    ]
+  }
+}

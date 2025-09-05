@@ -1,11 +1,3 @@
-resource "local" "wait_for_oracle_instance_propagation" {
-  provisioner "local-exec" {
-    command = "sleep 60"
-  }
-
-  depends_on = [ aws_instance.oracle_instance ]
-}
-
 resource "confluent_connector" "RiverHotel_Oracle" {
   environment {
     id = confluent_environment.staging.id
@@ -26,12 +18,13 @@ resource "confluent_connector" "RiverHotel_Oracle" {
     "database.user"                             = var.oracle_xstream_user_username
     "database.password"                         = var.oracle_xstream_user_password
     "database.dbname"                           = var.oracle_db_name
-    "database.service.name"                      = var.oracle_db_name
+    "database.service.name"                     = var.oracle_db_name
     "database.pdb.name"                         = var.oracle_pdb_name
+    "database.out.server.name"                  = var.oracle_xstream_outbound_server_name
 
-    "database.out.server.name"                  = "XOUT"
     "database.processor.licenses"               = "1"
     "tasks.max"                                 = "1"
+   
     # 데이터 포맷 및 스키마 레지스트리 설정 (AVRO 사용 권장)
     "output.key.format"                         = "AVRO"
     "output.data.format"                        = "AVRO"
@@ -103,7 +96,7 @@ resource "confluent_connector" "RiverHotel_Oracle" {
     # "auto.restart.on.user.error": "true"
 
   depends_on = [
-    local.wait_for_oracle_instance_propagation,
+    null_resource.db_listener_checker,
     confluent_service_account.app-manager,
     confluent_kafka_cluster.standard
   ]

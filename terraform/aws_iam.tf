@@ -15,66 +15,41 @@ resource "aws_iam_role" "s3_access_role_tableflow" {
   name        = local.iam_tableflow_role_name
   description = "IAM role for accessing S3 with trust policies for Confluent Tableflow and Databricks Unity Catalog"
 
-  # assume_role_policy = jsonencode({
-  #   Version = "2012-10-17"
-  #   Statement = [
-  #     # Statement 1 (Confluent): Allow Confluent Provider Integration Role to Assume this role
-  #     {
-  #       Effect = "Allow"
-  #       Principal = {
-  #         AWS = confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn
-  #       }
-  #       Action = "sts:AssumeRole"
-  #       Condition = {
-  #         StringEquals = {
-  #           "sts:ExternalId" = confluent_provider_integration.s3_tableflow_integration.aws[0].external_id
-  #         }
-  #       }
-  #     },
-  #     # Statement 2 (Confluent): Allow Confluent Provider Integration Role to Tag Session
-  #     {
-  #       Effect = "Allow"
-  #       Principal = {
-  #         AWS = confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn
-  #       }
-  #       Action = "sts:TagSession"
-  #     }
-  #   ]
-  # })
-
-  assume_role_policy = data.aws_iam_policy_document.s3_access_role_tableflow_assume_role_policy.json
-
-  depends_on = [ confluent_provider_integration.s3_tableflow_integration ]
-}
-
-data "aws_iam_policy_document" "s3_access_role_tableflow_assume_role_policy" {
-  version = "2012-10-17"
-  # statement {
-  #   effect = "Allow"
-  #   actions = [
-  #     "sts:AssumeRole"
-  #   ]
-  #   principals {
-  #     type        = "AWS"
-  #     identifiers = [confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn]
-  #   }
-  #   condition {
-  #     test     = "StringEquals"
-  #     variable = "sts:ExternalId"
-  #     values   = [confluent_provider_integration.s3_tableflow_integration.aws[0].external_id]
-  #   }
-  # }
-  # statement {
-  #   effect = "Allow"
-  #   actions = [
-  #     "sts:TagSession"
-  #   ]
-  #   principals {
-  #     type        = "AWS"
-  #     identifiers = [confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn]
-  #   }
-  # }
-
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    # Statement = [
+      # # Statement 1 (Confluent): Allow Confluent Provider Integration Role to Assume this role
+      # {
+      #   Effect = "Allow"
+      #   Principal = {
+      #     AWS = confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn
+      #   }
+      #   Action = "sts:AssumeRole"
+      #   Condition = {
+      #     StringEquals = {
+      #       "sts:ExternalId" = confluent_provider_integration.s3_tableflow_integration.aws[0].external_id
+      #     }
+      #   }
+      # },
+      # # Statement 2 (Confluent): Allow Confluent Provider Integration Role to Tag Session
+      # {
+      #   Effect = "Allow"
+      #   Principal = {
+      #     AWS = confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn
+      #   }
+      #   Action = "sts:TagSession"
+      # }
+    # ]
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = "*"
+        },
+        Action = "sts:AssumeRole"  
+      }
+    ]
+  })
 }
 
 # Attaching the AWS managed S3 full access policy for the demo
@@ -83,14 +58,72 @@ resource "aws_iam_role_policy_attachment" "s3_policy_attachment_tableflow" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+resource "null_resource" "wait_for_confluent_provider_integration_propagation" {
+    provisioner "local-exec" {
+    command = "sleep 30"
+  }
 
+  depends_on = [
+    confluent_provider_integration.s3_tableflow_integration
+  ]
+}
+
+resource "null_resource" "update_iam_role_trust_policy_tableflow" {
+  # LESSON LEARNED: Update trust policy with actual external ID from provider integration
+  # This is the key to making Tableflow work properly
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws iam update-assume-role-policy \
+        --role-name ${aws_iam_role.s3_access_role_tableflow.name} \
+        --policy-document '{
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "sts:AssumeRole",
+              "Principal": {
+                "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
+              },
+              "Condition": {
+                "StringEquals": {
+                  "sts:ExternalId": "${confluent_provider_integration.s3_tableflow_integration.aws[0].external_id}"
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": "sts:TagSession",
+              "Principal": {
+                "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
+              }
+            }
+          ]
+        }'
+    EOT
+  }
+
+  depends_on = [
+    null_resource.wait_for_confluent_provider_integration_propagation
+  ]
+
+  triggers = {
+    provider_integration_id = confluent_provider_integration.s3_tableflow_integration.id
+    role_arn                = aws_iam_role.s3_access_role_tableflow.arn
+  }
+}
+
+
+## -------------------------------
+# IAM Role for Databricks Unity Catalog S3 Access
+# ------------------------------- 
 resource "aws_iam_role" "s3_access_role_databricks" {
   name        = local.iam_databricks_role_name
   description = "IAM role for accessing S3 with trust policies for Confluent Tableflow and Databricks Unity Catalog"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+     Statement = [
       # Statement 3 (Databricks): Trust relationship for Databricks Root Account (from working example)
       {
         Effect = "Allow"
@@ -118,84 +151,16 @@ resource "aws_iam_role" "s3_access_role_databricks" {
   })
 }
 
-# ===============================
-# IAM Role Policy for S3 Access
-# ===============================
-
-resource "aws_iam_role_policy" "s3_access_policy_tableflow" {
-  name = "${local.prefix}-s3-access-policy-${local.resource_suffix}"
-  role = aws_iam_role.s3_access_role_tableflow.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "s3:*" # Full S3 access for the demo
-        ],
-        Resource = [
-          aws_s3_bucket.tableflow_bucket.arn,
-          "${aws_s3_bucket.tableflow_bucket.arn}/*"
-        ]
-      }
-    ]
-  })
-}
-resource "aws_iam_role_policy" "s3_access_policy_databricks" {
-  name = "${local.prefix}-s3-access-policy-${local.resource_suffix}"
-  role = aws_iam_role.s3_access_role_databricks.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "s3:*" # Full S3 access for the demo
-        ],
-        Resource = [
-          aws_s3_bucket.tableflow_bucket.arn,
-          "${aws_s3_bucket.tableflow_bucket.arn}/*"
-        ]
-      }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "s3_policy_attachment_databricks" {
+  role       = aws_iam_role.s3_access_role_databricks.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
-# ===============================
-# S3 Bucket Policy for Additional Security
-# TODO IS THIS NECESSARY?
-# ===============================
-
-resource "aws_s3_bucket_policy" "tableflow_bucket_policy" {
-  bucket = aws_s3_bucket.tableflow_bucket.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          AWS = aws_iam_role.s3_access_role_tableflow.arn
-        }
-        Action = [
-          "s3:*"
-        ]
-        Resource = [
-          aws_s3_bucket.tableflow_bucket.arn,
-          "${aws_s3_bucket.tableflow_bucket.arn}/*"
-        ]
-      }
-    ]
-  })
-}
 
 # ===============================
 # Update IAM Role Trust Policy with Real External ID
 # ===============================
-
-resource "null_resource" "update_iam_role_trust_policy" {
+resource "null_resource" "update_iam_role_trust_policy_databricks" {
   # LESSON LEARNED: Update trust policy with actual external ID from storage credential
   # This is the key to making Unity Catalog work properly
   # CRITICAL: Unity Catalog requires BOTH Databricks access AND self-assumption capability
@@ -245,7 +210,7 @@ resource "null_resource" "update_iam_role_trust_policy" {
 # Wait for Trust Policy Propagation
 # ===============================
 
-resource "null_resource" "wait_for_trust_policy_propagation" {
+resource "null_resource" "wait_for_trust_policy_databricks_propagation" {
   # LESSON LEARNED: AWS IAM changes need time to propagate
   # Extended delay to ensure role is fully available before self-reference
   provisioner "local-exec" {
@@ -253,7 +218,7 @@ resource "null_resource" "wait_for_trust_policy_propagation" {
   }
 
   depends_on = [
-    null_resource.update_iam_role_trust_policy
+    null_resource.update_iam_role_trust_policy_databricks
   ]
 }
 
@@ -261,7 +226,7 @@ resource "null_resource" "wait_for_trust_policy_propagation" {
 # Update IAM Role Trust Policy with Specific Role ARN for Self-Assumption
 # ===============================
 
-resource "null_resource" "update_iam_role_trust_policy_final" {
+resource "null_resource" "update_iam_role_trust_policy_databricks_final" {
   # LESSON LEARNED: Unity Catalog requires specific role ARN for self-assumption
   # This second update replaces account root with specific role ARN
   # CRITICAL: Must wait for role to be fully propagated before self-reference
@@ -298,8 +263,7 @@ resource "null_resource" "update_iam_role_trust_policy_final" {
   }
 
   depends_on = [
-    null_resource.wait_for_trust_policy_propagation,
-    confluent_provider_integration.s3_tableflow_integration,
+    null_resource.wait_for_trust_policy_databricks_propagation,
     databricks_storage_credential.external_credential
   ]
 
@@ -314,29 +278,25 @@ resource "null_resource" "update_iam_role_trust_policy_final" {
 # Wait for Final Trust Policy Propagation
 # ===============================
 
-resource "null_resource" "wait_for_final_trust_policy_propagation" {
+resource "null_resource" "wait_for_final_trust_policy_databricks_propagation" {
   # LESSON LEARNED: AWS IAM changes need time to propagate
   provisioner "local-exec" {
     command = "sleep 30"
   }
 
   depends_on = [
-    null_resource.update_iam_role_trust_policy_final
+    null_resource.update_iam_role_trust_policy_databricks_final
   ]
 }
 
 
-resource "aws_iam_role_policy_attachment" "s3_policy_attachment_databricks" {
-  role       = aws_iam_role.s3_access_role_databricks.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
 
 output "aws_iam" {
   value = {
     role_arn         = aws_iam_role.s3_access_role_tableflow.arn
     role_name        = aws_iam_role.s3_access_role_tableflow.name
     role_id          = aws_iam_role.s3_access_role_tableflow.id
-    role_policy_name = aws_iam_role_policy.s3_access_policy_tableflow.name
-    role_policy_id   = aws_iam_role_policy.s3_access_policy_tableflow.id
+    # role_policy_name = aws_iam_role_policy.s3_access_policy_tableflow.name
+    # role_policy_id   = aws_iam_role_policy.s3_access_policy_tableflow.id
   }
 }
