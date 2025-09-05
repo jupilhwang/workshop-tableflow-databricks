@@ -84,13 +84,13 @@ resource "aws_security_group" "sg" {
 
 # NEW NETWORKING
 
-# data "aws_availability_zones" "available" {
-#   state = "available"
-#   filter {
-#     name   = "zone-type"
-#     values = ["availability-zone"] # This excludes Local Zones and Wavelength Zones
-#   }
-# }
+data "aws_availability_zones" "available" {
+  state = "available"
+  filter {
+    name   = "zone-type"
+    values = ["us-east-1d", "us-east-1e", "us-east-1f"] # This excludes Local Zones and Wavelength Zones
+  }
+}
 
 # # ------------------------------------------------------
 # # VPC

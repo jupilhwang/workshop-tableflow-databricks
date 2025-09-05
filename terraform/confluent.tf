@@ -62,20 +62,21 @@ resource "confluent_role_binding" "app-manager-kafka-cluster-admin" {
 # -------------------------------
 # Confluent Provider Integration
 # -------------------------------
+# resource "confluent_provider_integration" "s3_tableflow_integration" {
+#   display_name = "${local.prefix}-s3-integration-${random_id.env_display_id.hex}"
+#   environment {
+#     id = confluent_environment.staging.id
+#   }
+#   aws {
+#     # During the creation of confluent_provider_integration.main, the S3 role does not yet exist.
+#     # The role will be created after confluent_provider_integration.main is provisioned
+#     # by the s3_access_role module using the specified target name.
+#     # Note: This is a workaround to avoid updating an existing role or creating a circular dependency.
+#     customer_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.iam_tableflow_role_name}"
 
-resource "confluent_provider_integration" "s3_tableflow_integration" {
-  display_name = "${local.prefix}-s3-integration-${random_id.env_display_id.hex}"
-  environment {
-    id = confluent_environment.staging.id
-  }
-  aws {
-    # During the creation of confluent_provider_integration.main, the S3 role does not yet exist.
-    # The role will be created after confluent_provider_integration.main is provisioned
-    # by the s3_access_role module using the specified target name.
-    # Note: This is a workaround to avoid updating an existing role or creating a circular dependency.
-    customer_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.iam_role_name}"
-  }
-}
+#     # customer_role_arn = aws_iam_role.s3_access_role_tableflow.arn
+#   }
+# }
 
 output "s3_tableflow_integration_details" {
   value = {
@@ -184,10 +185,6 @@ resource "confluent_api_key" "app-manager-flink-api-key" {
 # ------------------------------------------------------
 # ACLS
 # ------------------------------------------------------
-
-
-
-
 resource "confluent_kafka_acl" "app-manager-read-on-topic" {
   kafka_cluster {
     id = confluent_kafka_cluster.standard.id
@@ -303,7 +300,6 @@ output "confluent" {
   schema.registry.url= ${data.confluent_schema_registry_cluster.sr-cluster.rest_endpoint}
   schema.registry.basic.auth.user.info= "${confluent_api_key.app-manager-schema-registry-api-key.id}:${confluent_api_key.app-manager-schema-registry-api-key.secret}"
 
-  Confluent Cloud Tableflow Provider Integration ID: ${confluent_provider_integration.s3_tableflow_integration.id}
 
   EOT
 

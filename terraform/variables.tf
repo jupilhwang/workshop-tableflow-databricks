@@ -12,7 +12,7 @@ variable "call_sign" {
 variable "project_name" {
   description = "Name of this project to use in prefix for resource names"
   type        = string
-  default     = "tableflow-databricks"
+  default     = ""
 }
 
 variable "environment" {

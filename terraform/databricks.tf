@@ -10,12 +10,12 @@ resource "databricks_storage_credential" "external_credential" {
   comment = "Storage credential for Unity Catalog S3 access - ${local.resource_suffix}"
 
   aws_iam_role {
-    role_arn = aws_iam_role.s3_access_role.arn
+    role_arn = aws_iam_role.s3_access_role_databricks.arn
   }
 
   depends_on = [
-    aws_iam_role.s3_access_role,
-    aws_iam_role_policy.s3_access_policy
+    aws_iam_role.s3_access_role_databricks,
+    aws_iam_role_policy.s3_access_policy_databricks
   ]
 }
 
@@ -33,7 +33,8 @@ resource "databricks_external_location" "s3_bucket" {
   force_destroy   = true
 
   depends_on = [
-    null_resource.wait_for_final_trust_policy_propagation
+    null_resource.wait_for_final_trust_policy_propagation,
+    aws_s3_bucket.tableflow_bucket
   ]
 }
 

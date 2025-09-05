@@ -103,6 +103,7 @@ resource "aws_instance" "oracle_instance" {
     dnf install -y docker
     systemctl enable docker
     systemctl start docker
+    usermod -aG docker ec2-user
 
     # Install Docker Compose
     curl -L "https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
