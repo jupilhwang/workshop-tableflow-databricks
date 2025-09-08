@@ -72,7 +72,7 @@ resource "confluent_provider_integration" "s3_tableflow_integration" {
     customer_role_arn = aws_iam_role.s3_access_role_tableflow.arn
   }
 
-  depends_on = [ aws_iam_role.s3_access_role_tableflow ]
+  depends_on = [ confluent_environment.staging, aws_iam_role.s3_access_role_tableflow ]
 }
 
 output "s3_tableflow_integration_details" {

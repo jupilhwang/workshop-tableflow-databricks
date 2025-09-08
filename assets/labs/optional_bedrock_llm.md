@@ -111,8 +111,8 @@ Once enabled, you'll need to retrieve the **model ID** for use in your applicati
 
 5. Paste this value into the `aws_bedrock_anthropic_model_id` terraform override in your `terraform.tfvars` file
 
-6. Prefix the *Model ID* with `us.` for US-based regions or `eu.` for EU-based regions.
-  The *Model ID* should then look like this: `us.anthropic.claude-3-7-sonnet-20250219-v1:0`
+<!-- 6. Prefix the *Model ID* with `us.` for US-based regions or `eu.` for EU-based regions.
+  The *Model ID* should then look like this: `us.anthropic.claude-3-7-sonnet-20250219-v1:0` -->
 
 ##### Add Access Key, Secret, and Token to Terraform
 
