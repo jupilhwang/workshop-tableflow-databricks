@@ -59,7 +59,7 @@ resource "aws_iam_role_policy_attachment" "s3_policy_attachment_tableflow" {
 }
 
 resource "null_resource" "wait_for_confluent_provider_integration_propagation" {
-    provisioner "local-exec" {
+  provisioner "local-exec" {
     command = "sleep 30"
   }
 
@@ -112,7 +112,6 @@ resource "null_resource" "update_iam_role_trust_policy_tableflow" {
     role_arn                = aws_iam_role.s3_access_role_tableflow.arn
   }
 }
-
 
 ## -------------------------------
 # IAM Role for Databricks Unity Catalog S3 Access

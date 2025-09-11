@@ -6,7 +6,9 @@ However, due to Tabeflow not yet supporting retract/upsert `changelog.mode`, thi
 
 Then we decided to leverage AWS Workshop Studio accounts for presenter-led hands-on workshops, and Workshop Studio accounts do not have Bedrock access in `us-east-2`, which is a cloud region we need to support.
 
-## Terraform
+## Creating Connections
+
+### with Terraform
 
 These snippet should be added back to the `confluent.tf` file
 
@@ -70,7 +72,8 @@ aws_bedrock_anthropic_model_id = ""
 
 ```
 
-## LAB 1
+
+### LAB 1
 
 Add this content below the [AWS account configuration section](./LAB1_terraform_datagen.md#configure-aws-account)
 
@@ -147,6 +150,15 @@ Save your `terraform.tfvars` file. It should look somewhat like this (these are 
 ![Example tfvars file](../images/terraform_tfvars_example.png)
 
 Save the file and continue to the next step.
+
+### with Confluent Cloud UI
+1. Optin the Integrations in Confluent Cloud Environemnt Page
+2. In the Connections Tab, click **"Add Connection"**
+3. Select the **"AWS Bedrock"**
+4. Input the AWS Bedrock Model endpoint with region and model-id<br>
+  ex) https://bedrock-runtime.us-east-1.amazonaws.com/model/nthropic.claude-3-7-sonnet-20250219-v1:0/invoke
+
+5. Input the **AWS ACCESS KEY** and **AWS ACCESS SECRET**
 
 ### Verification Steps
 
@@ -227,6 +239,11 @@ CREATE TABLE AGGREGATE_HOTEL_REVIEWS_WITH_SUMMARY AS (
       LATERAL TABLE(ML_PREDICT('HOTEL_REVIEW_SUMMARIZER', HOTEL_REVIEWS)) AS ai_summary(REVIEW_SUMMARY)
 );
 ```
+
+> If you want the detailed the error message with ML_PREDICT then add the " ,map['debug','true']" in the ML_PREDICT function
+>
+> ```ML_PERDICT('HOTEL_PREVIEW_SUMMARIZER', HOTEL_REVIEWS, map['debug', 'true'])```
+
 
 Now review some records of this AI-powered dataset:
 

@@ -15,6 +15,9 @@ data "aws_availability_zones" "available" {
 resource "aws_vpc" "vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
+  tags = {
+    Name = "${local.prefix}-vpc-${local.resource_suffix}"
+  }
 }
 
 # Public Subnet
@@ -28,6 +31,9 @@ resource "aws_subnet" "public_subnet" {
   availability_zone       = each.value
   cidr_block              = cidrsubnet(aws_vpc.vpc.cidr_block, 8, index(sort(toset(data.aws_availability_zones.available.names)), each.value))
   map_public_ip_on_launch = true
+  tags = {
+    Name                     = "${local.prefix}-public-${each.value}-${local.resource_suffix}"
+  }
 }
 
 # -------------------------------
@@ -36,6 +42,9 @@ resource "aws_subnet" "public_subnet" {
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
+  tags = {
+    Name = "${local.prefix}-internet-gateway-${local.resource_suffix}"
+  }
 }
 
 
@@ -49,6 +58,10 @@ resource "aws_route_table" "public_route_table" {
   route {
     cidr_block = "0.0.0.0/0"                 # This route allows all outbound traffic
     gateway_id = aws_internet_gateway.igw.id # Route to the Internet Gateway
+  }
+
+  tags = {
+    Name = "${local.prefix}-public-route-table-${local.resource_suffix}"
   }
 }
 
@@ -89,6 +102,10 @@ resource "aws_security_group" "sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${local.prefix}-security-group-${local.resource_suffix}"
   }
 }
 

@@ -182,3 +182,9 @@ variable "allowed_cidr_blocks" {
   type        = list(string)
   default     = ["0.0.0.0/0"] # Default is open to all, but should be restricted in production
 }
+
+variable "databricks_warehouse_id" {
+  description = "Databricks SQL Warehouse ID"
+  type        = string
+  default     = ""
+}

@@ -39,6 +39,17 @@ resource "databricks_external_location" "s3_bucket" {
 }
 
 # ===============================
+# Catalog
+# ===============================
+resource "databricks_catalog" "tableflow_catalog" {
+  provider = databricks.workspace
+
+  name    = "${local.prefix}_catalog"
+  comment = "Catalog for Tableflow workshop - ${local.resource_suffix}"
+}
+
+
+# ===============================
 # Grants
 # ===============================
 
@@ -81,6 +92,14 @@ resource "databricks_grants" "external_location_grants" {
 # ===============================
 # Outputs
 # ===============================
+
+output "databricks_catalog" {
+  description = "Databricks catalog details"
+  value = {
+    name = databricks_catalog.tableflow_catalog.name
+    id   = databricks_catalog.tableflow_catalog.id
+  }
+}
 
 output "databricks_storage_credential" {
   description = "Databricks storage credential details"
