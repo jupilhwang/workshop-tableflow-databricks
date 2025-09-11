@@ -213,7 +213,7 @@ resource "null_resource" "wait_for_trust_policy_databricks_propagation" {
   # LESSON LEARNED: AWS IAM changes need time to propagate
   # Extended delay to ensure role is fully available before self-reference
   provisioner "local-exec" {
-    command = "sleep 60"
+    command = "sleep 30"
   }
 
   depends_on = [
