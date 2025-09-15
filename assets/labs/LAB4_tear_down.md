@@ -78,6 +78,12 @@ terraform destroy -auto-approve
    - Confluent Cloud (environments, clusters)
    - Databricks (workspaces, storage credentials)
 
+
+## Clean up All Confluent Resource with *delte org*
+1. Open the *Organization Settings* on the Right Top Corner Admin menu
+2. Click the *Delete Organizaiotn* in the *Settings* Icon.
+
+
 ## 🏁 Conclusion
 
 🎉 **Excellent work!** You've successfully completed this entire workshop and have responsibly cleaned up all cloud resources - go ahead and give yourself a pat on the back, you deserve it!

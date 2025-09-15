@@ -333,6 +333,7 @@ Here is a summary of the main cloud resources you created through Terraform:
 - EC2 instance running Oracle XE database with XStream enabled
 - S3 general-purpose bucket to store Delta table data
 - IAM roles and policies for secure access
+- Data Generator(shadowtraffic) running in the Oracle XE EC2 instance
 
 **Confluent Cloud Resources:**
 
@@ -364,7 +365,7 @@ Here is a summary of the main cloud resources you created through Terraform:
 ### Step 4: Verify Infrastructure Deployment
 
 Now is a good time to verify that the cloud resources we created via Terraform are accessible to us and working as expected.
-
+---
 #### Verify AWS Resources
 
 1. If logged out, log into the AWS console with the same account you used in Terraform
@@ -384,7 +385,7 @@ Now is a good time to verify that the cloud resources we created via Terraform a
    3. Verify that the bucket exists and is empty
 
    ![AWS S3 status is Available](../images/aws_s3_available.png)
-
+---
 #### Verify Databricks Resources
 
 Follow these steps in a separate browser tab to verify that your Databricks cloud resources work:
@@ -416,7 +417,7 @@ Follow these steps in a separate browser tab to verify that your Databricks clou
 > Keep this browser tab open as you will be returning to Databricks towards the end of this workshop.
 
 
-
+---
 #### Creating the Confluent Provider Intergration for tableflow s3
 1. Navigate to your Confluent Cloud account
 2. Find and click the *Integration* menu link in the left menu on your workshop environment
@@ -450,17 +451,91 @@ Follow these steps in a separate browser tab to verify that your Databricks clou
 
    ![AWS integration details](../images/confluent_integrations_provider.png) -->
 
+---
+
+#### Verify the Generate Data
+##### Data Generation Overview
+You will use a flexible data-generator tool called [Shadow Traffic](https://shadowtraffic.io/) to generate *River Hotel* data streams using a three-stage approach that creates both historical and streaming data.
+As depicted in [this ERD diagram](../../README.md#-entity-relationship-diagram) from the README, There are 5 streams of data that will be produced to Confluent Cloud. These data streams have these key features:
+
+- **Sequential execution**: Seed data → Historical data → Streaming data
+- **Historical timestamps**: Random distribution over past 8 weeks (Kafka) or fixed 10 weeks ago (Oracle)
+- **Customer behavior modeling**: 80% of activities/bookings come from repeat customers
+- **Data relationships**: Reviews reference actual bookings, activities reference real hotels/customers
+- **Realistic throttling**: Variable delays simulate real-world user behavior patterns
+
+> [!TIP]
+> **Dive Deeper into Data Generation**
+>
+> Peruse the details of this workshop's data generation by reviewing [this guide](../../data/data_overview.md)
+
+To generate this data, open a new shell window/tab at the workshop repository root folder and execute this command:
+
+**Linux/Mac**
+
+```sh
+docker run --env-file ./data/shadow-traffic-license.env -v "$(pwd)/data/:/home/data" shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json
+```
+<!-- 
+**Windows cmd**
+
+```sh
+docker run --env-file ./data/shadow-traffic-license.env -v "%cd%/data/:/home/data" shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json
+```
+
+**Windows Powershell**
+
+```sh
+docker run --env-file ./data/shadow-traffic-license.env -v "${PWD}/data/:/home/data" shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json
+``` -->
+
+> [!NOTE]
+> **Run ShadowTraffic Image v1.1.1**
+>
+> The above commands will run [v1.1.1](https://hub.docker.com/layers/shadowtraffic/shadowtraffic/1.1.1/images/sha256-5ae65285f9935a7e0a994fb451443060252bf82e0f7f1566d77c91a1117566ce) of the data generator in the foreground of your shell, which has been tested and validated as compatible with this workshop
+
+<!-- > [!WARNING]
+> **Resource Startup Duration**
+>
+> It may take **5-10 minutes** for some cloud resources, like the Oracle database on EC2, to finish initializing and start running. If you get any errors where the cloud resource isn't available or listening, wait a few minutes and try again. -->
+
+You should briefly see this output showing that it was successful in connecting to the data ingestion layer and pushing data to it:
+
+
+##### Verify the Data generator
+1. SSH Login to the oracle EC2 VM through *Terraform Output - oracle_vm.ssh_command*
+
+```sh
+ssh -i terraform/sshkey-tableflowworkshop-key-138f9abc.pem ec2-user@ec2-13-218-63-222.compute-1.amazonaws.com
+```
+
+2. Verify the docker process and the running of shadowtraffic
+```
+docker ps -a
+```
+   ![](../images/shadowtraffic_docker_ps.png)
+
+3. Check the log from docker process
+```
+docker logs <container_id>
+```
+![Shadow Traffic running successfully](../images/shadow_traffic_success.png)
+
+---
+
 #### Verify Confluent Resources
 1. Click on *Overview* in the left sidebar menu
 2. Click on your workshop Cluster
 3. Click on the *Topics* link in the left sidebar menu
 4. Notice that there no Topics being produced yet
 
-   ![Topic tiles and quickstart links ](../images/confluent_cluster_topics_empty.png)
+   ![Topic tiles and quickstart links ](../images/confluent_cluster_topic_list.png)
 
 **Huzzah!** - now that you have verified that your workshop cloud resources have been spun up correctly, it's time to generate data!
 
-### Step 5: Configure Oracle XStream Connector
+
+
+### Step 6: Configure Oracle XStream Connector
 
 In this section you will configure the Oracle XStream connector to capture real-time changes from your Oracle database and stream them to Confluent Cloud.
 
@@ -548,58 +623,6 @@ Well done! You have successfully configured change data capture for all events o
 
 Now that we have data generating to our Oracle database and Kafka topics, let's move on to the next step!
 
-### Step 6: Generate Data
-
-You will use a flexible data-generator tool called [Shadow Traffic](https://shadowtraffic.io/) to generate *River Hotel* data streams using a three-stage approach that creates both historical and streaming data.
-
-#### Data Generation Overview
-
-As depicted in [this ERD diagram](../../README.md#-entity-relationship-diagram) from the README, There are 5 streams of data that will be produced to Confluent Cloud. These data streams have these key features:
-
-- **Sequential execution**: Seed data → Historical data → Streaming data
-- **Historical timestamps**: Random distribution over past 8 weeks (Kafka) or fixed 10 weeks ago (Oracle)
-- **Customer behavior modeling**: 80% of activities/bookings come from repeat customers
-- **Data relationships**: Reviews reference actual bookings, activities reference real hotels/customers
-- **Realistic throttling**: Variable delays simulate real-world user behavior patterns
-
-> [!TIP]
-> **Dive Deeper into Data Generation**
->
-> Peruse the details of this workshop's data generation by reviewing [this guide](../../data/data_overview.md)
-
-To generate this data, open a new shell window/tab at the workshop repository root folder and execute this command:
-
-**Linux/Mac**
-
-```sh
-docker run --env-file ./data/shadow-traffic-license.env -v "$(pwd)/data/:/home/data" shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json
-```
-
-**Windows cmd**
-
-```sh
-docker run --env-file ./data/shadow-traffic-license.env -v "%cd%/data/:/home/data" shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json
-```
-
-**Windows Powershell**
-
-```sh
-docker run --env-file ./data/shadow-traffic-license.env -v "${PWD}/data/:/home/data" shadowtraffic/shadowtraffic:1.1.1 --config /home/data/shadow-traffic-configuration.json
-```
-
-> [!NOTE]
-> **Run ShadowTraffic Image v1.1.1**
->
-> The above commands will run [v1.1.1](https://hub.docker.com/layers/shadowtraffic/shadowtraffic/1.1.1/images/sha256-5ae65285f9935a7e0a994fb451443060252bf82e0f7f1566d77c91a1117566ce) of the data generator in the foreground of your shell, which has been tested and validated as compatible with this workshop
-
-> [!WARNING]
-> **Resource Startup Duration**
->
-> It may take **5-10 minutes** for some cloud resources, like the Oracle database on EC2, to finish initializing and start running. If you get any errors where the cloud resource isn't available or listening, wait a few minutes and try again.
-
-You should briefly see this output showing that it was successful in connecting to the data ingestion layer and pushing data to it:
-
-![Shadow Traffic running successfully](../images/shadow_traffic_success.png)
 
 ### Step 7: Review Topics
 
