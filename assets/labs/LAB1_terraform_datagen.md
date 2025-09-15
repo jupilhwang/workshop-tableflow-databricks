@@ -46,13 +46,13 @@ Get started by cloning the workshop repository and navigating to the Terraform c
    **HTTP:**
 
    ```sh
-   git clone https://github.com/confluentinc/workshop-tableflow-databricks.git
+   git clone https://github.com/jupilhwang/workshop-tableflow-databricks.git
    ```
 
    **SSH:**
 
    ```sh
-   git clone git@github.com:confluentinc/workshop-tableflow-databricks.git
+   git clone git@github.com:jupilhwang/workshop-tableflow-databricks.git
    ```
 
 3. Navigate to the Terraform directory:
