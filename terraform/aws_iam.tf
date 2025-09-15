@@ -58,60 +58,108 @@ resource "aws_iam_role_policy_attachment" "s3_policy_attachment_tableflow" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
-resource "null_resource" "wait_for_confluent_provider_integration_propagation" {
-  provisioner "local-exec" {
-    command = "sleep 30"
-  }
+# resource "null_resource" "wait_for_confluent_provider_integration_propagation" {
+#   provisioner "local-exec" {
+#     command = "sleep 30"
+#   }
 
-  depends_on = [
-    confluent_provider_integration.s3_tableflow_integration
-  ]
-}
+#   depends_on = [
+#     confluent_provider_integration.s3_tableflow_integration
+#   ]
+#   triggers = {
+#     provider_integration_id = confluent_provider_integration.s3_tableflow_integration.id
+#     role_arn                = aws_iam_role.s3_access_role_tableflow.arn
+#   }
+# }
 
-resource "null_resource" "update_iam_role_trust_policy_tableflow" {
-  # LESSON LEARNED: Update trust policy with actual external ID from provider integration
-  # This is the key to making Tableflow work properly
+# resource "null_resource" "update_iam_role_trust_policy_tableflow" {
+#   # LESSON LEARNED: Update trust policy with actual external ID from provider integration
+#   # This is the key to making Tableflow work properly
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      aws iam update-assume-role-policy \
-        --role-name ${aws_iam_role.s3_access_role_tableflow.name} \
-        --policy-document '{
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Action": "sts:AssumeRole",
-              "Principal": {
-                "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
-              },
-              "Condition": {
-                "StringEquals": {
-                  "sts:ExternalId": "${confluent_provider_integration.s3_tableflow_integration.aws[0].external_id}"
-                }
-              }
-            },
-            {
-              "Effect": "Allow",
-              "Action": "sts:TagSession",
-              "Principal": {
-                "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
-              }
-            }
-          ]
-        }'
-    EOT
-  }
+#   provisioner "local-exec" {
+#     command = <<-EOT
+#       aws iam update-assume-role-policy \
+#         --role-name ${aws_iam_role.s3_access_role_tableflow.name} \
+#         --policy-document '{
+#           "Version": "2012-10-17",
+#           "Statement": [
+#             {
+#               "Effect": "Allow",
+#               "Action": "sts:AssumeRole",
+#               "Principal": {
+#                 "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
+#               },
+#               "Condition": {
+#                 "StringEquals": {
+#                   "sts:ExternalId": "${confluent_provider_integration.s3_tableflow_integration.aws[0].external_id}"
+#                 }
+#               }
+#             },
+#             {
+#               "Effect": "Allow",
+#               "Action": "sts:TagSession",
+#               "Principal": {
+#                 "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
+#               }
+#             }
+#           ]
+#         }'
+#     EOT
+#   }
 
-  depends_on = [
-    null_resource.wait_for_confluent_provider_integration_propagation
-  ]
+#   depends_on = [
+#     null_resource.wait_for_confluent_provider_integration_propagation
+#   ]
+# }
 
-  triggers = {
-    provider_integration_id = confluent_provider_integration.s3_tableflow_integration.id
-    role_arn                = aws_iam_role.s3_access_role_tableflow.arn
-  }
-}
+# resource "null_resource" "wait_for_trust_policy_tableflow_propagation" {
+#   # LESSON LEARNED: AWS IAM changes need time to propagate
+#   provisioner "local-exec" {
+#     command = "sleep 30"
+#   }
+
+#   depends_on = [
+#     null_resource.update_iam_role_trust_policy_tableflow
+#   ]
+# }
+
+# resource "null_resource" "wait_for_final_trust_policy_tableflow_propagation" {
+#   # LESSON LEARNED: AWS IAM changes need time to propagate
+#   provisioner "local-exec" {
+#     command = <<-EOT
+#       aws iam update-assume-role-policy \
+#         --role-name ${aws_iam_role.s3_access_role_tableflow.name} \
+#         --policy-document '{
+#           "Version": "2012-10-17",
+#           "Statement": [
+#             {
+#               "Effect": "Allow",
+#               "Action": "sts:AssumeRole",
+#               "Principal": {
+#                 "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
+#               },
+#               "Condition": {
+#                 "StringEquals": {
+#                   "sts:ExternalId": "${confluent_provider_integration.s3_tableflow_integration.aws[0].external_id}"
+#                 }
+#               }
+#             },
+#             {
+#               "Effect": "Allow",
+#               "Action": "sts:TagSession",
+#               "Principal": {
+#                 "AWS": "${confluent_provider_integration.s3_tableflow_integration.aws[0].iam_role_arn}"
+#               }
+#             }
+#           ]
+#         }'
+#     EOT
+#   }
+
+#   depends_on = [
+#     null_resource.wait_for_confluent_provider_integration_propagation
+#   ]
+# }
 
 ## -------------------------------
 # IAM Role for Databricks Unity Catalog S3 Access

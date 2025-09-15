@@ -317,10 +317,9 @@ terraform apply -auto-approve
 ```
 
 > [!NOTE]
-> **Duration: 5-10 Minutes**
+> **Duration: 15-20 Minutes**
 >
 > It should take between 5-10 minutes for terraform to completely generate all of the needed cloud resources, so hang tight!
->
 > While you wait, you should see an extensive log output in your shell showing the progress of generating the  cloud resources.  When finished, you should see a message like this:
 >
 > *Apply complete! Resources: XX added, 0 changed, 0 destroyed.*
@@ -340,7 +339,8 @@ Here is a summary of the main cloud resources you created through Terraform:
 - Environment for workshop isolation
 - *Standard* Kafka cluster for data streaming
 - Flink compute pool
-- Provider Integration with AWS for Tableflow
+- Connection with AWS for Flink AI
+- Provider Integration with AWS for Tableflow (manual)
 
 **Databricks Resources:**
 
@@ -408,7 +408,6 @@ Follow these steps in a separate browser tab to verify that your Databricks clou
 1. Click on the *Credential* link
 2. Click on the *Validate Configuration* button
 3. You should see a success message like this:
-
    ![A list of permissions that have check marks next to it](../images/databricks_test_storage_credential.png)
 
 > [!NOTE]
@@ -416,19 +415,46 @@ Follow these steps in a separate browser tab to verify that your Databricks clou
 >
 > Keep this browser tab open as you will be returning to Databricks towards the end of this workshop.
 
-#### Verify Confluent Resources
+
+
+#### Creating the Confluent Provider Intergration for tableflow s3
+1. Navigate to your Confluent Cloud account
+2. Find and click the *Integration* menu link in the left menu on your workshop environment
+   ![Confluent Integration menu](../images/confluent_integration_menu.png)
+
+3. Click *Add integration* Button
+4. Choose the *Exsiting Role* and Click *Continue*
+5. Select the *Tableflow S3 Bucket* and Click *Continue*
+   ![Confluent Integration role](../images/confluent_integration_role.png)
+
+   1. Copy and paste the aws_s3 role ARN from terraform output
+   2. Input the Provider integration name what you want
+
+6. Click *Continue* and Click the Copy Link the *Trust Policy* and Click *Continue*
+   ![Confluent integration trust polic](../images/confluent_integration_trust_policy.png)
+
+7. Navite to your AWS IAM role page and search the *aws_s3 role*
+8. Click the *Trust relationships* tab
+9. Click the *Edit trust policy* and Paste the trust policy from confluent provider integration
+   ![](../images/aws_iam_role_trust_policy.png)
+   ![](../images/aws_iam_role_trust_policy_edit.png)
+
+10. Click the *update plicy* button
+
+<!-- #### Verify Confluent Resources
 
 1. Navigate to your Confluent Cloud account
 2. Find and Click on your workshop environment
 3. Click on the *Integrations* link in the left menu
 4. Notice there is a row under the *Provider* tab that contains the name **tableflow-databricks**. This is the AWS integration that will enable Tableflow to push streams as Delta Lake tables to S3
 
-   ![AWS integration details](../images/confluent_integrations_provider.png)
+   ![AWS integration details](../images/confluent_integrations_provider.png) -->
 
-5. Click on *Overview* in the left sidebar menu
-6. Click on your workshop Cluster
-7. Click on the *Topics* link in the left sidebar menu
-8. Notice that there no Topics being produced yet
+#### Verify Confluent Resources
+1. Click on *Overview* in the left sidebar menu
+2. Click on your workshop Cluster
+3. Click on the *Topics* link in the left sidebar menu
+4. Notice that there no Topics being produced yet
 
    ![Topic tiles and quickstart links ](../images/confluent_cluster_topics_empty.png)
 
