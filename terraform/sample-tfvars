@@ -19,3 +19,11 @@ databricks_service_principal_client_id     = ""
 databricks_service_principal_client_secret = ""
 databricks_host                            = ""
 databricks_user_email                      = ""
+
+# ===============================
+# AWS Overrides
+# ===============================
+aws_instance_type                         = ""        # r7i.xlarge for production-like, t3.large for cost-saving demo
+aws_bedrock_anthropic_model_id            = "anthropic.claude-3-7-sonnet-20250219-v1:0"
+aws_access_key_id                         = ""
+aws_secret_access_key                     = ""
