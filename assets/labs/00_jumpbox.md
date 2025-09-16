@@ -13,9 +13,9 @@
 sudo apt update && sudo apt install -y curl unzip apt-transport-https ca-certificates gnupg lsb-release
 
 ## aws cli
-curl "https://awscli.amazonaws.com/awscli-bundle.zip" -o "awscli-bundle.zip"
-unzip awscli-bundle.zip
-sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
 aws --version
 
 ## confluent cli
