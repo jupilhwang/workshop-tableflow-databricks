@@ -27,4 +27,4 @@ aws_instance_type                         = ""        # r7i.xlarge for productio
 aws_bedrock_anthropic_model_id            = "anthropic.claude-3-7-sonnet-20250219-v1:0"
 aws_access_key_id                         = ""
 aws_secret_access_key                     = ""
-aws_secret_session_token                  = ""        # Optional, only needed for temporary credentials
+aws_session_token                  = ""        # Optional, only needed for temporary credentials
